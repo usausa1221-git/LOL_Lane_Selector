@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL Lane Selector</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0a0e17;
+            --card-bg: #121a26;
+            --gold-color: #c8aa6e;
+            --gold-bright: #f0e6d2;
+            --text-color: #cdbe91;
+            --text-white: #ffffff;
+            --success-color: #4caf50;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--gold-bright);
+            text-align: center;
+            border-bottom: 2px solid var(--gold-color);
+            padding-bottom: 10px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border: 1px solid var(--gold-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .member-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .member-item.active {
+            border-color: var(--gold-color);
+            background: rgba(200, 170, 110, 0.1);
+        }
+
+        .member-item input {
+            margin-right: 8px;
+        }
+
+        .member-item label {
+            cursor: pointer;
+            color: var(--text-white);
+            user-select: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            background: linear-gradient(to bottom, #1e2830, #0f1317);
+            border: 1px solid var(--gold-color);
+            color: var(--gold-bright);
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--gold-color);
+            color: var(--bg-color);
+        }
+
+        button:disabled {
+            border-color: #555;
+            color: #555;
+            background: #111;
+            cursor: not-allowed;
+        }
+
+        /* コピー成功時のスタイルチェンジ用 */
+        button.copied {
+            background: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+
+        #result-capture-area {
+            background: #0f1622;
+            border: 2px solid var(--gold-color);
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        .result-title {
+            text-align: center;
+            color: var(--gold-bright);
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        .lane-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(200, 170, 110, 0.2);
+        }
+
+        .lane-row:last-child {
+            border-bottom: none;
+        }
+
+        .lane-name {
+            font-weight: bold;
+            color: var(--gold-color);
+            width: 100px;
+        }
+
+        .user-name {
+            color: var(--text-white);
+            font-size: 18px;
+            text-align: right;
+            flex-grow: 1;
+        }
+
+        .error {
+            color: #ff4e4e;
+            text-align: center;
+            margin-bottom: 10px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>LoL ポジション・ランダマイザー</h1>
+
+    <div class="container">
+        <h3>参加メンバー選択 (5人選択してください)</h3>
+        <div id="error-msg" class="error">5人ちょうど選択してください。</div>
+
+        <div class="member-list" id="member-checkboxes"></div>
+
+        <div class="btn-group">
+            <button id="roll-btn" onclick="assignLanes()">レーンを決定する</button>
+            <!-- ボタンのアクションをクリップボードコピーに変更 -->
+            <button id="copy-btn" onclick="copyResultToClipboard()" disabled>結果をクリップボードにコピー</button>
+        </div>
+
+        <div id="result-capture-area">
+            <p class="result-title">SUMMONER'S RIFT ASSIGNMENT</p>
+            <div id="result-board">
+                <div class="lane-row"><span class="lane-name">TOP</span><span class="user-name" id="res-TOP">-</span>
+                </div>
+                <div class="lane-row"><span class="lane-name">JUG</span><span class="user-name" id="res-JUG">-</span>
+                </div>
+                <div class="lane-row"><span class="lane-name">MID</span><span class="user-name" id="res-MID">-</span>
+                </div>
+                <div class="lane-row"><span class="lane-name">ADC</span><span class="user-name" id="res-ADC">-</span>
+                </div>
+                <div class="lane-row"><span class="lane-name">SUP</span><span class="user-name" id="res-SUP">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const initialMembers = ["うさうさ", "まおまお", "りくやん", "BIGHOTEL", "なんぶ", "じお", "はら"];
+        const lanes = ["TOP", "JUG", "MID", "ADC", "SUP"];
+        let history = {};
+
+        const checkboxContainer = document.getElementById("member-checkboxes");
+        initialMembers.forEach((name, index) => {
+            const div = document.createElement("div");
+            div.className = "member-item active";
+            div.innerHTML = `
+                <input type="checkbox" id="mem-${index}" value="${name}" checked onchange="toggleActive(this)">
+                <label for="mem-${index}">${name}</label>
+            `;
+            checkboxContainer.appendChild(div);
+        });
+
+        function toggleActive(checkbox) {
+            if (checkbox.checked) {
+                checkbox.parentElement.classList.add("active");
+            } else {
+                checkbox.parentElement.classList.remove("active");
+            }
+        }
+
+        function assignLanes() {
+            const errorMsg = document.getElementById("error-msg");
+            const checkedBoxes = document.querySelectorAll('#member-checkboxes input[type="checkbox"]:checked');
+
+            if (checkedBoxes.length !== 5) {
+                errorMsg.style.display = "block";
+                return;
+            }
+            errorMsg.style.display = "none";
+
+            const selectedPlayers = Array.from(checkedBoxes).map(cb => cb.value);
+            let currentAssignment = {};
+            let success = false;
+
+            for (let attempts = 0; attempts < 50; attempts++) {
+                let shuffledLanes = [...lanes].sort(() => Math.random() - 0.5);
+                let tempAssignment = {};
+                let hasViolation = false;
+
+                for (let i = 0; i < 5; i++) {
+                    const player = selectedPlayers[i];
+                    const assignedLane = shuffledLanes[i];
+
+                    if (history[player] === assignedLane) {
+                        hasViolation = true;
+                        break;
+                    }
+                    tempAssignment[assignedLane] = player;
+                }
+
+                if (!hasViolation) {
+                    currentAssignment = tempAssignment;
+                    success = true;
+                    break;
+                }
+            }
+
+            if (!success) {
+                let shuffledLanes = [...lanes].sort(() => Math.random() - 0.5);
+                lanes.forEach((lane, i) => {
+                    currentAssignment[lane] = selectedPlayers[i];
+                });
+            }
+
+            lanes.forEach(lane => {
+                const pName = currentAssignment[lane];
+                document.getElementById(`res-${lane}`).innerText = pName;
+                history[pName] = lane;
+            });
+
+            // コピーボタンを有効化し、状態をリセット
+            const copyBtn = document.getElementById("copy-btn");
+            copyBtn.disabled = false;
+            copyBtn.innerText = "結果をクリップボードにコピー";
+            copyBtn.classList.remove("copied");
+        }
+
+        // 新しい処理：画像をクリップボードにBlobとして書き込む
+        function copyResultToClipboard() {
+            const target = document.getElementById("result-capture-area");
+            const copyBtn = document.getElementById("copy-btn");
+
+            copyBtn.innerText = "コピー中...";
+
+            html2canvas(target, {
+                backgroundColor: "#0f1622",
+                scale: 2
+            }).then(canvas => {
+                // canvasをBlob（バイナリデータ）に変換してクリップボードに送る
+                canvas.toBlob(blob => {
+                    if (!blob) {
+                        alert("画像の生成に失敗しました");
+                        return;
+                    }
+
+                    // ClipboardItemオブジェクトを作成して書き込み
+                    const item = new ClipboardItem({ "image/png": blob });
+                    navigator.clipboard.write([item]).then(() => {
+                        // コピー成功時のUIフィードバック
+                        copyBtn.innerText = "コピー完了！";
+                        copyBtn.classList.add("copied");
+                    }).catch(err => {
+                        console.error("Clipboard Error:", err);
+                        alert("クリップボードへの書き込みに失敗しました。ブラウザの権限を確認してください。");
+                        copyBtn.innerText = "結果をクリップボードにコピー";
+                    });
+                }, "image/png");
+            });
+        }
+    </script>
+</body>
+
+</html>
