@@ -22,7 +22,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -35,6 +35,7 @@
             padding-bottom: 10px;
             width: 100%;
             max-width: 600px;
+            font-size: 24px;
         }
 
         .container {
@@ -48,42 +49,59 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
+        h3 {
+            margin-top: 0;
+            color: var(--gold-bright);
+            font-size: 16px;
+        }
+
+        /* 押しやすく改善したメンバーリスト */
         .member-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
         }
 
-        .member-item {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            border: 1px solid transparent;
+        /* 本物のチェックボックスは隠す */
+        .member-item input[type="checkbox"] {
+            display: none;
         }
 
-        .member-item.active {
-            border-color: var(--gold-color);
-            background: rgba(200, 170, 110, 0.1);
-        }
-
-        .member-item input {
-            margin-right: 8px;
-        }
-
+        /* ラベル自体を大きなボタンに変形 */
         .member-item label {
+            display: block;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid #2a3545;
+            color: #889ba8;
+            padding: 14px 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
             cursor: pointer;
-            color: var(--text-white);
             user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        /* 選択されている（アクティブな）状態のスタイル */
+        .member-item input[type="checkbox"]:checked+label {
+            border-color: var(--gold-color);
+            background: rgba(200, 170, 110, 0.15);
+            color: var(--text-white);
+            box-shadow: 0 0 10px rgba(200, 170, 110, 0.2);
+        }
+
+        /* ホバー時（PC用） */
+        .member-item label:hover {
+            border-color: #4a5a73;
+            background: rgba(255, 255, 255, 0.07);
         }
 
         .btn-group {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 25px;
         }
 
         button {
@@ -91,7 +109,7 @@
             background: linear-gradient(to bottom, #1e2830, #0f1317);
             border: 1px solid var(--gold-color);
             color: var(--gold-bright);
-            padding: 12px;
+            padding: 15px 10px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
@@ -105,13 +123,12 @@
         }
 
         button:disabled {
-            border-color: #555;
+            border-color: #444;
             color: #555;
             background: #111;
             cursor: not-allowed;
         }
 
-        /* コピー成功時のスタイルチェンジ用 */
         button.copied {
             background: var(--success-color);
             border-color: var(--success-color);
@@ -139,7 +156,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 15px;
+            padding: 14px 15px;
             border-bottom: 1px solid rgba(200, 170, 110, 0.2);
         }
 
@@ -151,6 +168,7 @@
             font-weight: bold;
             color: var(--gold-color);
             width: 100px;
+            font-size: 16px;
         }
 
         .user-name {
@@ -158,31 +176,59 @@
             font-size: 18px;
             text-align: right;
             flex-grow: 1;
+            font-weight: bold;
+        }
+
+        /* 野良（空き枠）の時の薄い文字スタイル */
+        .user-name.empty {
+            color: #4a5a73;
+            font-style: italic;
+        }
+
+        /* ベンチ枠のスタイル */
+        #bench-box {
+            margin-top: 15px;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            border: 1px dashed #4a5a73;
+            display: none;
+        }
+
+        .bench-title {
+            font-size: 14px;
+            color: #889ba8;
+            margin: 0 0 5px 0;
+        }
+
+        .bench-members {
+            color: var(--text-white);
+            font-size: 15px;
         }
 
         .error {
             color: #ff4e4e;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             display: none;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>LoL ポジション・ランダマイザー</h1>
+    <h1>LoL Lane Selector</h1>
 
     <div class="container">
-        <h3>参加メンバー選択 (5人選択してください)</h3>
-        <div id="error-msg" class="error">5人ちょうど選択してください。</div>
+        <h3>本日参戦するメンバーを選択</h3>
+        <div id="error-msg" class="error"></div>
 
         <div class="member-list" id="member-checkboxes"></div>
 
         <div class="btn-group">
             <button id="roll-btn" onclick="assignLanes()">レーンを決定する</button>
-            <!-- ボタンのアクションをクリップボードコピーに変更 -->
-            <button id="copy-btn" onclick="copyResultToClipboard()" disabled>結果をクリップボードにコピー</button>
+            <button id="copy-btn" onclick="copyResultToClipboard()" disabled>結果をコピー</button>
         </div>
 
         <div id="result-capture-area">
@@ -199,6 +245,12 @@
                 <div class="lane-row"><span class="lane-name">SUP</span><span class="user-name" id="res-SUP">-</span>
                 </div>
             </div>
+
+            <!-- 6人以上の時にあぶれた人を表示するエリア -->
+            <div id="bench-box">
+                <p class="bench-title">SUB / BENCH</p>
+                <div class="bench-members" id="res-BENCH">-</div>
+            </div>
         </div>
     </div>
 
@@ -207,46 +259,57 @@
         const lanes = ["TOP", "JUG", "MID", "ADC", "SUP"];
         let history = {};
 
+        // チェックボックス（隠し）と大きなボタン型ラベルを動的生成
         const checkboxContainer = document.getElementById("member-checkboxes");
         initialMembers.forEach((name, index) => {
             const div = document.createElement("div");
-            div.className = "member-item active";
+            div.className = "member-item";
             div.innerHTML = `
-                <input type="checkbox" id="mem-${index}" value="${name}" checked onchange="toggleActive(this)">
+                <input type="checkbox" id="mem-${index}" value="${name}" checked>
                 <label for="mem-${index}">${name}</label>
             `;
             checkboxContainer.appendChild(div);
         });
 
-        function toggleActive(checkbox) {
-            if (checkbox.checked) {
-                checkbox.parentElement.classList.add("active");
-            } else {
-                checkbox.parentElement.classList.remove("active");
-            }
-        }
-
         function assignLanes() {
             const errorMsg = document.getElementById("error-msg");
             const checkedBoxes = document.querySelectorAll('#member-checkboxes input[type="checkbox"]:checked');
 
-            if (checkedBoxes.length !== 5) {
+            // 最低でも誰か1人以上選ばれていないと虚無になるので一応バリデーション
+            if (checkedBoxes.length === 0) {
+                errorMsg.innerText = "メンバーを1人以上選択してください。";
                 errorMsg.style.display = "block";
                 return;
             }
             errorMsg.style.display = "none";
 
-            const selectedPlayers = Array.from(checkedBoxes).map(cb => cb.value);
+            // 選択されたプレイヤーの配列（最大7人）
+            let selectedPlayers = Array.from(checkedBoxes).map(cb => cb.value);
+
+            // シャッフル関数
+            const shuffle = (array) => array.sort(() => Math.random() - 0.5);
+
+            // プレイヤーたちをランダムに並び替える
+            selectedPlayers = shuffle([...selectedPlayers]);
+
+            // レーンに割り当てる5人（本番メンバー）と、あぶれた人（ベンチ）に分ける
+            const activePlayers = selectedPlayers.slice(0, 5);
+            const benchPlayers = selectedPlayers.slice(5);
+
             let currentAssignment = {};
             let success = false;
 
+            // 「2連続同じレーン回避」のためのループ（本番メンバーのみを対象に抽選）
             for (let attempts = 0; attempts < 50; attempts++) {
-                let shuffledLanes = [...lanes].sort(() => Math.random() - 0.5);
+                let shuffledLanes = shuffle([...lanes]);
                 let tempAssignment = {};
                 let hasViolation = false;
 
-                for (let i = 0; i < 5; i++) {
-                    const player = selectedPlayers[i];
+                // 割り当てる人数は「現在の本番メンバー数」か「5」の小さい方
+                const assignCount = Math.min(activePlayers.length, 5);
+
+                for (let i = 0; i < assignCount; i++) {
+                    const player = activePlayers[i];
                     const assignedLane = shuffledLanes[i];
 
                     if (history[player] === assignedLane) {
@@ -263,27 +326,47 @@
                 }
             }
 
+            // 万が一のセーフティ
             if (!success) {
-                let shuffledLanes = [...lanes].sort(() => Math.random() - 0.5);
-                lanes.forEach((lane, i) => {
-                    currentAssignment[lane] = selectedPlayers[i];
+                let shuffledLanes = shuffle([...lanes]);
+                activePlayers.forEach((player, i) => {
+                    if (i < 5) currentAssignment[shuffledLanes[i]] = player;
                 });
             }
 
+            // 画面（ボード）の初期化と反映
             lanes.forEach(lane => {
-                const pName = currentAssignment[lane];
-                document.getElementById(`res-${lane}`).innerText = pName;
-                history[pName] = lane;
+                const resEl = document.getElementById(`res-${lane}`);
+                if (currentAssignment[lane]) {
+                    const pName = currentAssignment[lane];
+                    resEl.innerText = pName;
+                    resEl.classList.remove("empty");
+                    history[pName] = lane; // 履歴を更新
+                } else {
+                    // 5人に満たない場合は「野良（OPEN）」にする
+                    resEl.innerText = "野良 (OPEN)";
+                    resEl.classList.add("empty");
+                }
             });
 
-            // コピーボタンを有効化し、状態をリセット
+            // ベンチの表示設定
+            const benchBox = document.getElementById("bench-box");
+            if (benchPlayers.length > 0) {
+                document.getElementById("res-BENCH").innerText = benchPlayers.join(", ");
+                benchBox.style.display = "block";
+                // ベンチに回った人は、連続回避用の前回の履歴をリセット（次回どのレーンでも行けるように）
+                benchPlayers.forEach(p => delete history[p]);
+            } else {
+                benchBox.style.display = "none";
+            }
+
+            // コピーボタンの状態リセット
             const copyBtn = document.getElementById("copy-btn");
             copyBtn.disabled = false;
-            copyBtn.innerText = "結果をクリップボードにコピー";
+            copyBtn.innerText = "結果をコピー";
             copyBtn.classList.remove("copied");
         }
 
-        // 新しい処理：画像をクリップボードにBlobとして書き込む
         function copyResultToClipboard() {
             const target = document.getElementById("result-capture-area");
             const copyBtn = document.getElementById("copy-btn");
@@ -294,23 +377,19 @@
                 backgroundColor: "#0f1622",
                 scale: 2
             }).then(canvas => {
-                // canvasをBlob（バイナリデータ）に変換してクリップボードに送る
                 canvas.toBlob(blob => {
                     if (!blob) {
                         alert("画像の生成に失敗しました");
                         return;
                     }
-
-                    // ClipboardItemオブジェクトを作成して書き込み
                     const item = new ClipboardItem({ "image/png": blob });
                     navigator.clipboard.write([item]).then(() => {
-                        // コピー成功時のUIフィードバック
                         copyBtn.innerText = "コピー完了！";
                         copyBtn.classList.add("copied");
                     }).catch(err => {
                         console.error("Clipboard Error:", err);
-                        alert("クリップボードへの書き込みに失敗しました。ブラウザの権限を確認してください。");
-                        copyBtn.innerText = "結果をクリップボードにコピー";
+                        alert("コピーに失敗しました。");
+                        copyBtn.innerText = "結果をコピー";
                     });
                 }, "image/png");
             });
